@@ -56,8 +56,38 @@ router.post('/', [auth, [
 // @desc    Update contact
 // @access  Private
 
-router.put('/:id', (req, res) => {
-    res.send('Update Contact');
+router.put('/:id', auth, async (req, res) => {
+    const { name, email, phone, type } = req.body;
+
+    //Build a contact object
+
+    const contactFields = {};
+
+    if (name) contactFields.name = name;
+    if (email) contactFields.name = email;
+    if (phone) contactFields.name = phone;
+    if (type) contactFields.name = type;
+
+    try {
+        let contact = await Contact.findById(req.params.id);
+
+        if (!contact) returnres.status(404).json({ msg: 'Contact not found' });
+
+        // Make sure user owns contact
+        if (contact.user.toString() !== req.user.id) {
+            return res.status(401).json({ msg: 'Not authorized' })
+        }
+
+        contact = await Contact.findByIdAndUpdate(req.params.id,
+            { $set: contactFields },
+            { new: true });
+
+        res.json(contact)
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error1');
+    }
 });
 
 
@@ -65,8 +95,25 @@ router.put('/:id', (req, res) => {
 // @desc    Delete contact
 // @access  Private
 
-router.delete('/:id', (req, res) => {
-    res.send('Delete Contact');
+router.delete('/:id', auth, async (req, res) => {
+    try {
+        let contact = await Contact.findById(req.params.id);
+
+        if (!contact) returnres.status(404).json({ msg: 'Contact not found' });
+
+        // Make sure user owns contact
+        if (contact.user.toString() !== req.user.id) {
+            return res.status(401).json({ msg: 'Not authorized' })
+        }
+
+        await Contact.findByIdAndRemove(req.params.id);
+
+        res.json({ msg: 'Contact Removed' })
+
+    } catch (err) {
+        console.error(err.message);
+        res.status(500).send('Server Error1');
+    }
 });
 
 module.exports = router;
